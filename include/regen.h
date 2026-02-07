@@ -28,7 +28,7 @@ typedef struct {
 } dparen_pair_t;
 
 typedef struct {
-   size_t paren_idx; /* which prren pair does this belong to */
+   size_t paren_idx; /* which paren pair does this belong to */
    const char *bar_ptr;
 } bar_t;
 
