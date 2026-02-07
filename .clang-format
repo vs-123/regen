@@ -1,3 +1,4 @@
 BasedOnStyle: WebKit
 IndentWidth: 3
 AlignConsecutiveAssignments: Consecutive
+PointerAlignment: Right
