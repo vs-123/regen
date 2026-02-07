@@ -4,7 +4,9 @@ Regen is a dead-simple regex-engine written in C99. The term `regen` is a syllab
 
 ## USAGE
 
-Regen follows a thrfe step process: initialise, match, clean. The following snippet demonstrates usage:
+Regen follows a three-step process -- initialise, match, clean.
+
+The following snippet demonstrates the process along with general usage:
 
 ```c
 #include "regen.h"
