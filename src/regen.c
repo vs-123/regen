@@ -133,7 +133,7 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
          size_t j_lookahead = (step == '+') ? 1 : 0;
 
          /* while (j >= min_j) { */
-         while (j >= j + j_lookahead) {
+         while (j >= j_strt + j_lookahead) {
             /* this took wayy too long for me to come up with */
             int res = exec_match(regex + i + step + 1, regex_len - (i + step + 1),
                 str + j, str_len - j, regen, p_idx);
