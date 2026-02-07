@@ -60,8 +60,8 @@ regen_free(&engine);
 | `\s` / `\S` | - |  Whitespace/Non-whitespace |
 | `\w` | - |  Alphanumeric words (underscores are counted) |
 | `\\` | - |  Literal escape |
-| **CASE INSENSITIVITY** | - |  Toggle `is_not_case_sensitive` flag in `regen_t`. |
-| **BACKTRACKING** | - |  When a greedy match causes the rest of the pattern to fail, the engine steps back to find a valid path. |
+| **CASE INSENSITIVITY** | - |  Toggle `is_not_case_sensitive` flag in `regen_t` |
+| **BACKTRACKING** | - |  When a greedy match causes the rest of the pattern to fail, the engine steps back to find a valid path |
 
 ## LICENSE
 
