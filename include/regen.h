@@ -53,7 +53,7 @@ typedef struct {
    dparen_pair_t pairs;
    dbar_t bars;
    dcapture_t captures;
-   int flags;
+   int is_not_case_sensitive;
 } regen_t;
 
 int regen_match(const char *regexp, const char *str, regen_t *regen);

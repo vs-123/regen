@@ -56,7 +56,9 @@ int match_sngl(const char *regex, const char *str)
       }
    }
 
-   return *regex == *str;
+   char rc = (regen->is_not_case_sensitive) ? tolower(*regex) : *regex;
+   char sc = (regen->is_not_case_sensitive) ? tolower(*str) : *str;
+   return (rc == sc) ? 1 : -1;
 }
 
 /* i have no idea how to name this lol */
