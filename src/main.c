@@ -4,33 +4,35 @@
 
 int main(void)
 {
-   regen_t regen = { 0 };
-   regen.flags   = 0;
+   regen_t regen            = { 0 };
+   const char *demos[][2] = {
+      /* MATCH */
+      { "(red|blue) pill", "take the red pill" },
+      { "[0-9]+ degrees", "reclined at an angle of 30 degrees" },
+      { "\\w+@\\w+\\.\\w+", "mail: vs-123@github.com" },
+      { "colou?r", "the colour is grey" },
+      { "colou?r", "the color is grey" },
+      { "^start", "start of the line" },
+      { "end$", "this is the end" },
 
-   const char* regex = "([A-Za-z]+): ([0-9]+)";
-   const char* txt   = "ContentLength: 404";
+      /* NO MATCH */
+      { "(red|blue) pill", "take the green pill" },
+      { "[0-9]+ degrees", "reclined at an angle of 3O degrees" },
+      { "\\w+@\\w+\\.\\w+", "mail: vs-123@@github.com" },
+      { "colou?r", "the colr is grey" },
+      { "^start", "sssssstart of the line" },
+      { "end$", "this is the endd" },
+      { NULL, NULL },
+   };
 
-   printf("[REGEX] %s\n", regex);
-   printf("[TXT] \"%s\"\n\n", txt);
-
-   int match_size = regen_match(regex, txt, &regen);
-
-   if (match_size >= 0) {
-      printf("[SUCCESS] MATCH SIZE -- %d\n", match_size);
-      printf("\n");
-      printf("[CAPTURES]\n");
-      for (size_t i = 0; i < regen.captures.count; i++) {
-         capture_t cptr = regen.captures.elems[i];
-
-         if (cptr.ptr) {
-            printf("[%zu] %.*s\n", i, (int)cptr.size, cptr.ptr);
-         }
+   for (int i = 0; i < 24; i++) {
+      if (demos[i][0] == NULL) {
+         break;
       }
-   } else {
-      printf("[FAIL] NO MATCH\n");
+      int size = regen_match(demos[i][0], demos[i][1], &regen);
+      printf("[PATTERN] %-17s -->   %s\n", demos[i][0], (size >= 0) ? "MATCH" : "NO MATCH");
+      regen_free(&regen);
    }
-
-   regen_free(&regen);
 
    return 0;
 }

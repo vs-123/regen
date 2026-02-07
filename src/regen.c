@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-int intrprt_bars(const char *, size_t, regen_t *, size_t);
+int intrprt_bars(const char *, size_t, const char *, regen_t *, size_t);
 
-int match_sngl(const char *regex, const char *str)
+int match_sngl(const char *regex, const char *str, regen_t *regen)
 {
    if (*regex == '.') {
       return 1;
@@ -22,20 +22,17 @@ int match_sngl(const char *regex, const char *str)
             if (*str >= regex[idx] && *str <= regex[idx + 2]) {
                has_found = 1;
             }
-            idx += 2;
+            idx += 3;
          } else {
             if (regex[idx] == *str) {
                has_found = 1;
             }
+            idx++;
          }
-
-         idx++;
       }
-
       if (is_carrot_mode) {
          has_found = !has_found;
       }
-
       return has_found ? 1 : -1;
    }
 
@@ -67,7 +64,6 @@ size_t get_thing_size(const char *regex)
    if (regex[0] == '\\') {
       return 2;
    }
-
    if (regex[0] == '[') {
       size_t i = 1;
       while (regex[i] && regex[i] != ']') {
@@ -75,19 +71,17 @@ size_t get_thing_size(const char *regex)
       }
       return i + 1;
    }
-
    return 1;
 }
 
-int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_len, regen_t *regen,
-    size_t p_idx)
+int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_len,
+    const char *orig_str, regen_t *regen, size_t p_idx)
 {
    size_t i = 0, j = 0;
 
    while (i < regex_len) {
       if (regex[i] == '(') {
          size_t target_idx = 0;
-
          for (size_t pair_idx = 1; pair_idx < regen->pairs.count; pair_idx++) {
             if (regen->pairs.elems[pair_idx].start == (regex + i + 1)) {
                target_idx = pair_idx;
@@ -95,7 +89,7 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
             }
          }
 
-         int bar_thing = intrprt_bars(str + j, str_len - j, regen, target_idx);
+         int bar_thing = intrprt_bars(str + j, str_len - j, orig_str, regen, target_idx);
          if (bar_thing < 0) {
             return -1;
          }
@@ -111,7 +105,7 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
       }
 
       if (regex[i] == '^') {
-         if (j != 0) {
+         if (str + j != orig_str) {
             return -1;
          }
          i++;
@@ -124,79 +118,68 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
 
       size_t step = get_thing_size(regex + i);
 
-      if (i + step < regex_len && (regex[i + step] == '*' || regex[i + step] == '+')) {
-         char step_c   = regex[i + step];
-         size_t j_strt = j;
+      if (i + step < regex_len
+          && (regex[i + step] == '*' || regex[i + step] == '+' || regex[i + step] == '?')) {
+         char step_c        = regex[i + step];
+         size_t j_strt      = j;
+         size_t max_matches = (step_c == '?') ? 1 : (str_len - j);
+         size_t match_count = 0;
 
-         while (j < str_len && match_sngl(regex + i, str + j) > 0) {
-            j++;
+         while (match_count < max_matches && (j_strt + match_count) < str_len
+             && match_sngl(regex + i, str + j_strt + match_count, regen) > 0) {
+            match_count++;
          }
 
          /* size_t min_j = (step_c == '+') ? j_strt + 1 : j_strt; */
+         j                  = j_strt + match_count;
          size_t j_lookahead = (step_c == '+') ? 1 : 0;
 
          /* while (j >= min_j) { */
          while (j >= j_strt + j_lookahead) {
             /* this took wayy too long for me to come up with */
             int res = exec_match(regex + i + step + 1, regex_len - (i + step + 1), str + j,
-                str_len - j, regen, p_idx);
-
+                str_len - j, orig_str, regen, p_idx);
             if (res >= 0) {
-               return j + res;
+               return (j + res);
             }
-
             if (j == 0) {
                break;
             }
-
             j--;
          }
-
          return -1;
       } else {
-         if (j >= str_len || match_sngl(regex + i, str + j) < 0) {
+         if (j >= str_len || match_sngl(regex + i, str + j, regen) < 0) {
             return -1;
          }
-
          j++;
          i += step;
       }
    }
-
    return j;
 }
 
-int intrprt_bars(const char *str, size_t str_len, regen_t *regen, size_t p_idx)
+int intrprt_bars(
+    const char *str, size_t str_len, const char *orig_str, regen_t *regen, size_t p_idx)
 {
    paren_pair_t *pair = &regen->pairs.elems[p_idx];
-
    for (size_t i = 0; i <= pair->bars_count; ++i) {
-      /* const char *bstart = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i -
-       * 1].bar_ptr + 1; */
-      const char *bstart;
+      /* const char *bstart = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i - 1].bar_ptr + 1; */
+      const char *bstart
+          = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i - 1].bar_ptr + 1;
       size_t b_len;
 
-      /* on a second thought, this looks better than ternary, plus it's too long */
-      if (i == 0) {
-         bstart = pair->start;
-      } else {
-         bstart = regen->bars.elems[pair->bars_idx + i - 1].bar_ptr + 1;
-      }
-
-      /* this one too is too long to make it ternary lol */
       if (i < pair->bars_count) {
          b_len = regen->bars.elems[pair->bars_idx + i].bar_ptr - bstart;
       } else {
          b_len = pair->start + pair->size - bstart;
       }
 
-      int result = exec_match(bstart, b_len, str, str_len, regen, p_idx);
-
+      int result = exec_match(bstart, b_len, str, str_len, orig_str, regen, p_idx);
       if (result >= 0) {
          return result;
       }
    }
-
    return -1;
 }
 
@@ -218,12 +201,9 @@ int regen_match(const char *regex, const char *str, regen_t *regen)
       if (regex[i] == '(') {
          paren_pair_t p = { regex + i + 1, 0, regen->bars.count, 0 };
          capture_t c    = { 0 };
-
          dappend(regen->pairs, p);
          dappend(regen->captures, c);
-
-         stack[stack_ptr] = regen->pairs.count - 1;
-         stack_ptr++;
+         stack[stack_ptr++] = regen->pairs.count - 1;
       } else if (regex[i] == ')' && stack_ptr > 1) {
          size_t p_idx                   = stack[--stack_ptr];
          regen->pairs.elems[p_idx].size = regex + i - regen->pairs.elems[p_idx].start;
@@ -237,13 +217,11 @@ int regen_match(const char *regex, const char *str, regen_t *regen)
 
    size_t str_len = strlen(str);
    for (size_t i = 0; i <= str_len; i++) {
-      int ok = intrprt_bars(str + i, str_len - i, regen, 0);
-
+      int ok = intrprt_bars(str + i, str_len - i, str, regen, 0);
       if (ok >= 0) {
          return ok;
       }
    }
-
    return -1;
 }
 
@@ -258,6 +236,5 @@ void regen_free(regen_t *r)
    if (r->captures.elems) {
       free(r->captures.elems);
    }
-
    memset(r, 0, sizeof(regen_t));
 }
