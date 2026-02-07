@@ -42,17 +42,17 @@ int match_sngl(const char *regex, const char *str)
    if (*regex == '\\') {
       switch (regex[1]) {
       case 'd':
-         return isdigit(*str);
+         return (isdigit(*str)) ? 1 : -1;
       case 's':
-         return isspace(*str);
+         return (isspace(*str)) ? 1 : -1;
       case 'w':
          return (isalnum(*str) || *str == '_') ? 1 : -1;
       case 'D':
-         return !isdigit(*str);
+         return (!isdigit(*str)) ? 1 : -1;
       case 'S':
-         return !isspace(*str);
+         return (!isspace(*str)) ? 1 : -1;
       default:
-         return regex[1] == *str;
+         return (regex[1] == *str) ? 1 : -1;
       }
    }
 
