@@ -77,7 +77,8 @@ size_t get_thing_size(const char *regex)
    return 1;
 }
 
-int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_len, regen_t *regen, size_t p_idx)
+int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_len, regen_t *regen,
+    size_t p_idx)
 {
    size_t i = 0, j = 0;
 
@@ -130,13 +131,13 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
          }
 
          /* size_t min_j = (step_c == '+') ? j_strt + 1 : j_strt; */
-         size_t j_lookahead = (step == '+') ? 1 : 0;
+         size_t j_lookahead = (step_c == '+') ? 1 : 0;
 
          /* while (j >= min_j) { */
          while (j >= j_strt + j_lookahead) {
             /* this took wayy too long for me to come up with */
-            int res = exec_match(regex + i + step + 1, regex_len - (i + step + 1),
-                str + j, str_len - j, regen, p_idx);
+            int res = exec_match(regex + i + step + 1, regex_len - (i + step + 1), str + j,
+                str_len - j, regen, p_idx);
 
             if (res >= 0) {
                return j + res;
@@ -168,9 +169,19 @@ int intrprt_bars(const char *str, size_t str_len, regen_t *regen, size_t p_idx)
    paren_pair_t *pair = &regen->pairs.elems[p_idx];
 
    for (size_t i = 0; i <= pair->bars_count; ++i) {
-      const char *bstart = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i - 1].bar_ptr + 1;
+      /* const char *bstart = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i -
+       * 1].bar_ptr + 1; */
+      const char *bstart;
       size_t b_len;
 
+      /* on a second thought, this looks better than ternary, plus it's too long */
+      if (i == 0) {
+         bstart = pair->start;
+      } else {
+         bstart = regen->bars.elems[pair->bars_idx + i - 1].bar_ptr + 1;
+      }
+
+      /* this one too is too long to make it ternary lol */
       if (i < pair->bars_count) {
          b_len = regen->bars.elems[pair->bars_idx + i].bar_ptr - bstart;
       } else {
@@ -213,7 +224,7 @@ int regen_match(const char *regex, const char *str, regen_t *regen)
          stack_ptr++;
       } else if (regex[i] == ')' && stack_ptr > 1) {
          size_t p_idx                   = stack[--stack_ptr];
-         regen->pairs.elems[p_idx].size = (size_t)(regex + i - regen->pairs.elems[p_idx].start);
+         regen->pairs.elems[p_idx].size = regex + i - regen->pairs.elems[p_idx].start;
       } else if (regex[i] == '|') {
          size_t crnt_p = stack[stack_ptr - 1];
          bar_t b       = { crnt_p, regex + i };
@@ -236,7 +247,15 @@ int regen_match(const char *regex, const char *str, regen_t *regen)
 
 void regen_free(regen_t *r)
 {
-   free(r->pairs.elems);
-   free(r->bars.elems);
-   free(r->captures.elems);
+   if (r->pairs.elems) {
+      free(r->pairs.elems);
+   }
+   if (r->bars.elems) {
+      free(r->bars.elems);
+   }
+   if (r->captures.elems) {
+      free(r->captures.elems);
+   }
+
+   memset(r, 0, sizeof(regen_t));
 }
