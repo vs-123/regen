@@ -1,5 +1,8 @@
 .*/
 .*
-build/
 *~
 *.vim
+build/
+
+!.clang-format
+!.gitignore

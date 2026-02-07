@@ -22,15 +22,14 @@ int match_sngl(const char *regex, const char *str)
             if (*str >= regex[idx] && *str <= regex[idx + 2]) {
                has_found = 1;
             }
-
-            idx += 3;
+            idx += 2;
          } else {
             if (regex[idx] == *str) {
                has_found = 1;
             }
-
-            idx++;
          }
+
+         idx++;
       }
 
       if (is_carrot_mode) {
@@ -43,11 +42,15 @@ int match_sngl(const char *regex, const char *str)
    if (*regex == '\\') {
       switch (regex[1]) {
       case 'd':
-         return isdigit(*str) ? 1 : -1;
+         return isdigit(*str);
       case 's':
-         return isspace(*str) ? 1 : -1;
+         return isspace(*str);
       case 'w':
          return (isalnum(*str) || *str == '_') ? 1 : -1;
+      case 'D':
+         return !isdigit(*str);
+      case 'S':
+         return !isspace(*str);
       default:
          return regex[1] == *str;
       }
@@ -82,24 +85,24 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
       if (regex[i] == '(') {
          size_t target_idx = 0;
 
-         for (size_t k = 1; k < regen->pairs.count; k++) {
-            if (regen->pairs.elems[k].start == (regex + i + 1)) {
-               target_idx = k;
+         for (size_t pair_idx = 1; pair_idx < regen->pairs.count; pair_idx++) {
+            if (regen->pairs.elems[pair_idx].start == (regex + i + 1)) {
+               target_idx = pair_idx;
                break;
             }
          }
 
-         int ok = intrprt_bars(str + j, str_len - j, regen, target_idx);
-         if (ok < 0) {
+         int bar_thing = intrprt_bars(str + j, str_len - j, regen, target_idx);
+         if (bar_thing < 0) {
             return -1;
          }
 
          if (target_idx - 1 < regen->captures.count) {
             regen->captures.elems[target_idx - 1].ptr  = str + j;
-            regen->captures.elems[target_idx - 1].size = ok;
+            regen->captures.elems[target_idx - 1].size = bar_thing;
          }
 
-         j += ok;
+         j += bar_thing;
          i += regen->pairs.elems[target_idx].size + 2;
          continue;
       }
@@ -126,10 +129,12 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
             j++;
          }
 
-         size_t min_j = (step_c == '+') ? j_strt + 1 : j_strt;
+         /* size_t min_j = (step_c == '+') ? j_strt + 1 : j_strt; */
+         size_t j_lookahead = (step == '+') ? 1 : 0;
 
-         while (j >= min_j) {
-            /* this took wayy too long for me to adjust */
+         /* while (j >= min_j) { */
+         while (j >= j + j_lookahead) {
+            /* this took wayy too long for me to come up with */
             int res = exec_match(regex + i + step + 1, regex_len - (i + step + 1),
                 str + j, str_len - j, regen, p_idx);
 
@@ -154,6 +159,7 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
          i += step;
       }
    }
+
    return j;
 }
 
@@ -162,14 +168,8 @@ int intrprt_bars(const char *str, size_t str_len, regen_t *regen, size_t p_idx)
    paren_pair_t *pair = &regen->pairs.elems[p_idx];
 
    for (size_t i = 0; i <= pair->bars_count; ++i) {
-      const char *bstart;
+      const char *bstart = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i - 1].bar_ptr + 1;
       size_t b_len;
-
-      if (i == 0) {
-         bstart = pair->start;
-      } else {
-         bstart = regen->bars.elems[pair->bars_idx + i - 1].bar_ptr + 1;
-      }
 
       if (i < pair->bars_count) {
          b_len = regen->bars.elems[pair->bars_idx + i].bar_ptr - bstart;
@@ -225,6 +225,7 @@ int regen_match(const char *regex, const char *str, regen_t *regen)
    size_t str_len = strlen(str);
    for (size_t i = 0; i <= str_len; i++) {
       int ok = intrprt_bars(str + i, str_len - i, regen, 0);
+
       if (ok >= 0) {
          return ok;
       }
