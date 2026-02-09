@@ -1,6 +1,6 @@
 # REGEN
 
-Regen is a dead-simple regex-engine written in C99. The term `regen` is a syllabic abbreviation of **reg**ex-**en**gine.
+Regen is a dead-simple, PCRE-compatible, regular-expressions engine written in C99. The term `regen` is a syllabic abbreviation of **reg**ex-**en**gine.
 
 ## USAGE
 
@@ -34,6 +34,10 @@ if (regen_match(pattern, text, &engine) >= 0) {
    }
 }
 
+/* LOOKAROUNDS (PCRE-COMPATIBLE) */
+regen_match("abc(?=def)", "abcdef", &engine); 
+regen_match("(?<=abc)def", "abcdef", &engine);
+
 /* TOGGLE CASE-SENSITIVITY */
 engine.is_not_case_sensitive = 1;
 regen_match("APPLE", "i like apples", &engine); /* matches */
@@ -56,6 +60,10 @@ regen_free(&engine);
 | `[abc]` | **SETS** |  Match any character contained within the set |
 | `[a-z]` | **RANGES** |  Set with ASCII ranges for letters and numbers |
 | `[^abc]` | **INVERSION** |  Matches any character NOT in the set |
+| `(?=...)` | **LOOKAHEAD** |  Match only if the pattern follows |
+| `(?!...)` | **NEG. LOOKAHEAD** |  Match only if the pattern DOES NOT follow |
+| `(?<=...)` | **LOOKBEHIND** |  Match only if the pattern precedes |
+| `(?<!...)` | **NEG. LOOKBEHIND** |  Match only if the pattern DOES NOT precede |
 | `\d` / `\D` | - |  Digits/Non-digits |
 | `\s` / `\S` | - |  Whitespace/Non-whitespace |
 | `\w` | - |  Alphanumeric words (underscores are counted) |
