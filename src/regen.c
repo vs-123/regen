@@ -135,7 +135,9 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                size_t target_idx = 0;
                for (size_t pair_idx = 1; pair_idx < regen->pairs.count; pair_idx++)
                   {
-                     if (regen->pairs.elems[pair_idx].start == (regex + i + 1))
+                     const char *p_start = regen->pairs.elems[pair_idx].start;
+                     if (p_start == (regex + i + 1) || p_start == (regex + i + 3)
+                         || p_start == (regex + i + 4))
                         {
                            target_idx = pair_idx;
                            break;
@@ -148,7 +150,7 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                if (type == GROUP_LOOKBEHIND_POS || type == GROUP_LOOKBEHIND_NEG)
                   {
                      size_t lb_len = get_subexpr_len (regen->pairs.elems[target_idx].start,
-                                                       regen->pairs.elems[target_idx].size);
+                                                      regen->pairs.elems[target_idx].size);
 
                      if ((str + j) - lb_len < orig_str)
                         {
@@ -204,17 +206,19 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                      j += bar_thing;
                   }
 
-               size_t meta_len = 0;
-               if (type >= GROUP_LOOKAHEAD_POS && type <= GROUP_LOOKAHEAD_NEG)
+               size_t prefix_len = 1;
+               if (type == GROUP_LOOKAHEAD_POS || type == GROUP_LOOKAHEAD_NEG)
                   {
-                     meta_len = 2;
+                     prefix_len = 3;
                   }
-               if (type >= GROUP_LOOKBEHIND_POS)
+               if (type == GROUP_LOOKBEHIND_POS || type == GROUP_LOOKBEHIND_NEG)
                   {
-                     meta_len = 3;
+                     prefix_len = 4;
                   }
 
-               i += regen->pairs.elems[target_idx].size + 2 + meta_len;
+               i += prefix_len + regen->pairs.elems[target_idx].size + 1;
+               continue;
+
                continue;
             }
 
