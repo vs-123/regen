@@ -27,7 +27,7 @@ main (void)
       /* LOOKAROUNDS */
       { "abc(?=def)", "abcdef" },
       { "abc(?!def)", "abcghi" },
-      { "(?<=abc)def", "abcghi" },
+      { "(?<=abc)def", "abcdef" },
       { "(?<!abc)def", "ghidef" },
 
       { NULL, NULL },

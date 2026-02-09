@@ -100,7 +100,7 @@ match_sngl (const char *regex, const char *str, regen_t *regen)
    char rc = (regen->is_not_case_sensitive) ? tolower (*regex) : *regex;
    char sc = (regen->is_not_case_sensitive) ? tolower (*str) : *str;
    return (rc == sc) ? 1 : -1;
-}
+} /* match_sngl */
 
 /* i have no idea how to name this lol */
 size_t
@@ -164,10 +164,6 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                         {
                            bar_thing = intrprt_bars ((str + j) - lb_len, lb_len, orig_str, regen,
                                                      target_idx);
-                           if (bar_thing != (int)lb_len)
-                              {
-                                 bar_thing = -1;
-                              }
                         }
                   }
                else
@@ -286,7 +282,7 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
             }
       }
    return j;
-}
+} /* exec_match */
 
 int
 intrprt_bars (const char *str, size_t str_len, const char *orig_str, regen_t *regen, size_t p_idx)
@@ -400,7 +396,7 @@ regen_match (const char *regex, const char *str, regen_t *regen)
             }
       }
    return -1;
-}
+} /* regen_match */
 
 void
 regen_free (regen_t *r)
