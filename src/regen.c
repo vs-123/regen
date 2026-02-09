@@ -195,19 +195,19 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                      return -1;
                   }
 
-               if (type == GROUP_CAPTURE)
+               if (type == GROUP_CAPTURE || type == GROUP_NON_CAPTURE)
                   {
                      if (bar_thing < 0)
-                        {
-                           return -1;
-                        }
-                     if (target_idx - 1 < regen->captures.count)
+                        return -1;
+
+                     if (type == GROUP_CAPTURE && target_idx - 1 < regen->captures.count)
                         {
                            regen->captures.elems[target_idx - 1].ptr  = str + j;
                            regen->captures.elems[target_idx - 1].size = bar_thing;
                         }
                      j += bar_thing;
                   }
+
 
                size_t prefix_len = 1;
                if (type == GROUP_LOOKAHEAD_POS || type == GROUP_LOOKAHEAD_NEG)
@@ -271,36 +271,69 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
          if (i + step < regex_len
              && (regex[i + step] == '*' || regex[i + step] == '+' || regex[i + step] == '?'))
             {
-               char step_c        = regex[i + step];
+               char step_c           = regex[i + step];
+               int is_lazy           = (i + step + 1 < regex_len && regex[i + step + 1] == '?');
+               size_t next_regex_off = i + step + 1 + (is_lazy ? 1 : 0);
+
                size_t j_strt      = j;
                size_t max_matches = (step_c == '?') ? 1 : (str_len - j);
-               size_t match_count = 0;
+               size_t min_matches = (step_c == '+') ? 1 : 0;
 
-               while (match_count < max_matches && (j_strt + match_count) < str_len
-                      && match_sngl (regex + i, str + j_strt + match_count, regen) > 0)
+               if (is_lazy)
                   {
-                     match_count++;
+                     /* NON-GREEDY */
+                     for (size_t current_matches = min_matches; current_matches <= max_matches;
+                          current_matches++)
+                        {
+                           size_t k      = 0;
+                           int prefix_ok = 1;
+                           for (k = 0; k < current_matches; k++)
+                              {
+                                 if (match_sngl (regex + i, str + j_strt + k, regen) <= 0)
+                                    {
+                                       prefix_ok = 0;
+                                       break;
+                                    }
+                              }
+                           if (!prefix_ok)
+                              {
+                                 break;
+                              }
+
+                           int res = exec_match (regex + next_regex_off, regex_len - next_regex_off,
+                                                 str + j_strt + current_matches,
+                                                 str_len - (j_strt + current_matches), orig_str,
+                                                 regen, p_idx);
+                           if (res >= 0)
+                              {
+                                 return (j_strt + current_matches + res);
+                              }
+                        }
                   }
-
-               /* size_t min_j = (step_c == '+') ? j_strt + 1 : j_strt; */
-               j                  = j_strt + match_count;
-               size_t j_lookahead = (step_c == '+') ? 1 : 0;
-
-               /* while (j >= min_j) { */
-               while (j >= j_strt + j_lookahead)
+               else
                   {
-                     /* this took wayy too long for me to come up with */
-                     int res = exec_match (regex + i + step + 1, regex_len - (i + step + 1),
-                                           str + j, str_len - j, orig_str, regen, p_idx);
-                     if (res >= 0)
+                     /* GREEDY */
+                     size_t match_count = 0;
+                     while (match_count < max_matches && (j_strt + match_count) < str_len
+                            && match_sngl (regex + i, str + j_strt + match_count, regen) > 0)
                         {
-                           return (j + res);
+                           match_count++;
                         }
-                     if (j == 0)
+                     j = j_strt + match_count;
+                     while (j >= j_strt + min_matches)
                         {
-                           break;
+                           int res = exec_match (regex + next_regex_off, regex_len - next_regex_off,
+                                                 str + j, str_len - j, orig_str, regen, p_idx);
+                           if (res >= 0)
+                              {
+                                 return (j + res);
+                              }
+                           if (j == 0)
+                              {
+                                 break;
+                              }
+                           j--;
                         }
-                     j--;
                   }
                return -1;
             }
@@ -372,7 +405,12 @@ regen_match (const char *regex, const char *str, regen_t *regen)
                /* check for lookahead -- (?=, (?! */
                if ((i + 2) < regex_len && regex[i + 1] == '?')
                   {
-                     if (regex[i + 2] == '=')
+                     if (regex[i + 2] == ':')
+                        {
+                           type   = GROUP_NON_CAPTURE;
+                           offset = 3;
+                        }
+                     else if (regex[i + 2] == '=')
                         {
                            type   = GROUP_LOOKAHEAD_POS;
                            offset = 3;

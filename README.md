@@ -67,6 +67,9 @@ regen_free(&engine);
    - If subsequent part of regex fails due to this, regen backtracks and tries rest of the pattern
    - This makes `[0-9]+[0-9]` work
 
+- **NON-GREEDY QUANTIFIERS** 
+   - Supports non-greedy quantifiers like `*?` & `+?`
+
 - **CHARACTER CLASSES + WILDCARD**
    - Supports `[...]` sets, `[a-z]` ranges, `[^...]` inverted sets, `\d`, `\w`, `\s` and their inversions and also `.` wildcard
    - See **SYNTAX** section for more information
@@ -88,6 +91,7 @@ regen_free(&engine);
 | `*` | **ZERO OR MORE** |  Matches zero or more occurrences |
 | `+` | **ONE OR MORE** |  Matches one or more occurences |
 | `?` | **ZERO OR ONE** |  Matches zero or one occurence, good for optional components |
+| `*?`, `+?` | **NON-GREEDY QUANTIFIERS** |  Matches the minimum required for the quantifier |
 | `\|` | **OR OPERATOR** |  Match first pattern or the other, chainable |
 | `()` | **CAPTURE GROUPS** |  Group & extract sub-matches (can be nested) |
 | `.` | **WILDCARDS** |  Matches any single character |
@@ -106,7 +110,6 @@ regen_free(&engine);
 ## LIMITATIONS
 
 This project does **NOT** support:
-- **NON-GREEDY QUANTIFIERS** -- `*?`, `+?`
 - **BACKREFERENCES** -- `\1`, `\2`
 - **VARIABLE-LENGTH LOOKBEHIND** -- `(?<=a+)`
 

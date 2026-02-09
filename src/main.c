@@ -38,8 +38,15 @@ main (void)
       { "abc(?!def)", "abcghi", .should_match=1},
       { "(?<=abc)def", "abcdef", .should_match=1},
       { "(?<!abc)def", "ghidef", .should_match=1},
-
       { "(?<=\\bNo )\\d+", "No 101", .should_match=1},
+
+      /* NON-GREEDY */
+      { "a+?b", "aaab", .should_match=1},
+      { "<.+?>", "<a><b>", .should_match=1},
+      { ".*?", "anything", .should_match=1},
+
+      /* NON-CAPTURING GROUP */
+      { "(?:ha-)+ho", "ha-ha-ha-ho", .should_match=1},
 
       NULL_CASE
    };
