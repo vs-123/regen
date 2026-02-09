@@ -16,8 +16,15 @@ get_subexpr_len (const char *regex, size_t len)
       {
          if (regex[i] == '\\')
             {
-               size++;
+               if (regex[i + 1] != 'b')
+                  {
+                     size++;
+                  }
                i += 2;
+            }
+         else if (regex[i] == '^' || regex[i] == '$')
+            {
+               i++;
             }
          else if (regex[i] == '[')
             {
@@ -231,6 +238,32 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
          if (regex[i] == '$')
             {
                return (j == str_len) ? j : -1;
+            }
+
+         if (regex[i] == '\\' && regex[i + 1] == 'b')
+            {
+               int prev_is_word = 0;
+               int crnt_is_word = 0;
+
+               if (str + j > orig_str)
+                  {
+                     char prev    = *(str + j - 1);
+                     prev_is_word = (isalnum (prev) || prev == '_');
+                  }
+
+               if (j < str_len)
+                  {
+                     char curr    = *(str + j);
+                     crnt_is_word = (isalnum (curr) || curr == '_');
+                  }
+
+               if (prev_is_word == crnt_is_word)
+                  {
+                     return -1;
+                  }
+
+               i += 2;
+               continue;
             }
 
          size_t step = get_thing_size (regex + i);
