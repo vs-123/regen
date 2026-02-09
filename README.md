@@ -47,7 +47,41 @@ regen_free(&engine);
 
 ## FEATURES
 
-| FEATURE | TERMINOLOGY | DESCRIPTION |
+- **ZERO-WIDTH LOOKAROUND ASSERTIONS**
+   - Positive Lookahead -- `(?=...)`
+   - Negative Lookahead -- `(?!...)`
+   - Positive Lookbehind -- `(?<=...)`
+   - Negative Lookbehind -- `(?<!...)`
+
+- **CAPTURING GROUPS + NESTING**
+   - Allows deeply nested groups
+   - Supports dynamic group discovery
+
+- **ADVANCED ALTERNATION**
+   - Tries branches left to right
+   - Works inside groups and at root level
+   - Supports backtracking i.e. if a branch matches but the rest of the regex fails, regen backtracks and tries the next alternative
+
+- **GREEDY QUANTIFIERS + BACKTRACKING**
+   - First consumes as many characters as possible
+   - If subsequent part of regex fails due to this, regen backtracks and tries rest of the pattern
+   - This makes `[0-9]+[0-9]` work
+
+- **CHARACTER CLASSES + WILDCARD**
+   - Supports `[...]` sets, `[a-z]` ranges, `[^...]` inverted sets, `\d`, `\w`, `\s` and their inversions and also `.` wildcard
+   - See **SYNTAX** section for more information
+
+- **ANCHORS + BOUNDARIES**
+   - Supports `^` and `$` anchors
+   - Supports `\\` escape literals like `\.`
+   - Supports `\b` word boundaries
+
+- **CASE SENSITIVITY**
+   - Can be toggled with `is_not_case_sensitive` flag
+
+## SYNTAX
+
+| SYNTAX | TERMINOLOGY | DESCRIPTION |
 | :-- | :-- | :-- |
 | `^` | **START OF STRING** |  Matches only when pattern occurs at the absolute beginning of the input |
 | `$` | **END OF STRING** |  Matches only when pattern reaches the very end of the input |
@@ -68,8 +102,13 @@ regen_free(&engine);
 | `\s` / `\S` | - |  Whitespace/Non-whitespace |
 | `\w` | - |  Alphanumeric words (underscores are counted) |
 | `\\` | - |  Literal escape |
-| **CASE INSENSITIVITY** | - |  Toggle `is_not_case_sensitive` flag in `regen_t` |
-| **BACKTRACKING** | - |  When a greedy match causes the rest of the pattern to fail, the engine steps back to find a valid path |
+
+## LIMITATIONS
+
+This project does **NOT** support:
+- **NON-GREEDY QUANTIFIERS** -- `*?`, `+?`
+- **BACKREFERENCES** -- `\1`, `\2`
+- **VARIABLE-LENGTH LOOKBEHIND** -- `(?<=a+)`
 
 ## LICENSE
 
