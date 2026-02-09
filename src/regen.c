@@ -90,17 +90,27 @@ int exec_match(const char *regex, size_t regex_len, const char *str, size_t str_
          }
 
          int bar_thing = intrprt_bars(str + j, str_len - j, orig_str, regen, target_idx);
+         group_type_t type = regen->pairs.elems[target_idx].type;
+
+         if (type == GROUP_LOOKAHEAD_POS && bar_thing < 0) {
+            return -1;
+         } else if (type == GROUP_LOOKAHEAD_NEG && bar_thing >= 0) {
+            return -1;
+         }
+
          if (bar_thing < 0) {
             return -1;
          }
 
          if (target_idx - 1 < regen->captures.count) {
-            regen->captures.elems[target_idx - 1].ptr  = str + j;
+            regen->captures.elems[target_idx - 1].ptr = str + j;
             regen->captures.elems[target_idx - 1].size = bar_thing;
          }
 
          j += bar_thing;
-         i += regen->pairs.elems[target_idx].size + 2;
+
+         size_t meta_len = (type == GROUP_CAPTURE) ? 0 : 2;
+         i += regen->pairs.elems[target_idx].size + 2 + meta_len;
          continue;
       }
 
@@ -190,7 +200,7 @@ int regen_match(const char *regex, const char *str, regen_t *regen)
    regen->captures.count = 0;
    regen->pairs.count    = 0;
 
-   paren_pair_t root = { regex, regex_len, 0, 0 };
+   paren_pair_t root = { regex, regex_len, 0, 0, GROUP_CAPTURE };
    dappend(regen->pairs, root);
 
    size_t stack[256];
@@ -199,11 +209,29 @@ int regen_match(const char *regex, const char *str, regen_t *regen)
 
    for (size_t i = 0; i < regex_len; i++) {
       if (regex[i] == '(') {
-         paren_pair_t p = { regex + i + 1, 0, regen->bars.count, 0 };
-         capture_t c    = { 0 };
+         group_type_t type = GROUP_CAPTURE;
+         size_t offset = 1;
+
+         /* check for lookahead -- (?=, (?! */
+         if ((i + 2) < regex_len && regex[i + 1] == '?') {
+            if (regex[i+2] == '=') {
+               type = GROUP_LOOKAHEAD_POS;
+               offset = 3;
+            } else if (regex[i+2] == '!') {
+               type = GROUP_LOOKAHEAD_NEG;
+               offset = 3;
+            }
+         }
+
+         paren_pair_t p = {regex+i+offset, 0, regen->bars.count, 0, type};
+         capture_t c = {0};
+
+
          dappend(regen->pairs, p);
          dappend(regen->captures, c);
          stack[stack_ptr++] = regen->pairs.count - 1;
+
+         i += (offset - 1);
       } else if (regex[i] == ')' && stack_ptr > 1) {
          size_t p_idx                   = stack[--stack_ptr];
          regen->pairs.elems[p_idx].size = regex + i - regen->pairs.elems[p_idx].start;

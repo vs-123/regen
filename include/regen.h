@@ -14,11 +14,18 @@
       (vector).elems[(vector).count++] = i;                                                   \
    } while (0);
 
+typedef enum {
+   GROUP_CAPTURE,
+   GROUP_LOOKAHEAD_POS,
+   GROUP_LOOKAHEAD_NEG,
+} group_type_t;
+
 typedef struct {
    const char *start;
    size_t size;
    size_t bars_idx;
    size_t bars_count;
+   group_type_t type;
 } paren_pair_t;
 
 typedef struct {
