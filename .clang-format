@@ -1,5 +1,4 @@
-BasedOnStyle: WebKit
+BasedOnStyle: GNU
 IndentWidth: 3
 AlignConsecutiveAssignments: Consecutive
-PointerAlignment: Right
 ColumnLimit: 100

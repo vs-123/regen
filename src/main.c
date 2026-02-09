@@ -2,9 +2,10 @@
 
 #include "regen.h"
 
-int main(void)
+int
+main (void)
 {
-   regen_t regen            = { 0 };
+   regen_t regen          = { 0 };
    const char *demos[][2] = {
       /* MATCH */
       { "(red|blue) pill", "take the red pill" },
@@ -22,17 +23,23 @@ int main(void)
       { "colou?r", "the colr is grey" },
       { "^start", "sssssstart of the line" },
       { "end$", "this is the endd" },
+
+      /* LOOKAROUNDS */
+      { "abc(?=def)", "abcdef" },
+      { "abc(?!def)", "abcghi" },
+      { "(?<=abc)def", "abcghi" },
+      { "(?<!abc)def", "ghidef" },
+
       { NULL, NULL },
    };
 
-   for (int i = 0; i < 24; i++) {
-      if (demos[i][0] == NULL) {
-         break;
+   for (int i = 0; demos[i][0] != NULL; i++)
+      {
+         int size = regen_match (demos[i][0], demos[i][1], &regen);
+         printf ("[PATTERN #%d] %-17s -->   %s\n", i + 1, demos[i][0],
+                 (size >= 0) ? "MATCH" : "NO MATCH");
+         regen_free (&regen);
       }
-      int size = regen_match(demos[i][0], demos[i][1], &regen);
-      printf("[PATTERN] %-17s -->   %s\n", demos[i][0], (size >= 0) ? "MATCH" : "NO MATCH");
-      regen_free(&regen);
-   }
 
    return 0;
 }
