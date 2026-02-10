@@ -41,6 +41,9 @@ main (void)
 
            { "(?<=\\bNo )\\d+", "No 101", .should_match = 1 },
 
+           { "<a>.*</a>", "<a>first</a><a>second</a>", .should_match = 1 },
+           { "<a>.*?</a>", "<a>first</a><a>second</a>", .should_match = 1 },
+
            NULL_CASE
          };
 
