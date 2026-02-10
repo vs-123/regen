@@ -50,7 +50,7 @@ clear_captures (regen_t *regen, size_t p_idx)
 {
    if (p_idx > 0 && p_idx <= regen->captures.count)
       {
-         regen->captures.elems[p_idx - 1].ptr = NULL;
+         regen->captures.elems[p_idx - 1].ptr  = NULL;
          regen->captures.elems[p_idx - 1].size = 0;
       }
 }
@@ -183,9 +183,10 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                group_type_t type = regen->pairs.elems[target_idx].type;
                int bar_thing;
 
-               if (type == GROUP_CAPTURE) {
-                  clear_captures(regen, target_idx);
-               }
+               if (type == GROUP_CAPTURE)
+                  {
+                     clear_captures (regen, target_idx);
+                  }
 
                if (type == GROUP_LOOKBEHIND_POS || type == GROUP_LOOKBEHIND_NEG)
                   {
@@ -347,6 +348,11 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                                     }
                               }
 
+                           if (count >= max_matches)
+                              {
+                                 break;
+                              }
+
                            int consumed
                                = is_group
                                      ? intrprt_bars (str + j_strt + crnt_offset,
@@ -387,7 +393,7 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                            offsets[count] = crnt_total;
                         }
 
-                     while (1)
+                     while (count >= min_matches)
                         {
                            int res = exec_match (regex + next_regex_off, regex_len - next_regex_off,
                                                  str + j_strt + offsets[count],
