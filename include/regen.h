@@ -71,11 +71,21 @@ typedef struct
    size_t capacity;
 } dcapture_t;
 
+
+typedef enum {
+   REGEN_RES_OK,
+   REGEN_RES_NOMATCH,
+   REGEN_RES_ERROR,
+   REGEN_RES_ERROR_INVALID_BACKREF,
+   REGEN_RES_ERROR_NESTED_BACKREF,
+} regen_result_status_t;
+
 typedef struct
 {
-   char **elems;
+   regen_result_status_t status;
    size_t count;
    size_t capacity;
+   char **elems;
 } regen_result_t;
 
 typedef struct

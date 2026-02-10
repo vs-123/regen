@@ -65,9 +65,9 @@ match_atom (const char *regex, const char *str, regen_t *regen)
 
    if (*regex == '[')
       {
-         int has_found      = 0;
+         int has_found  = 0;
          int is_negated = (regex[1] == '^');
-         size_t idx         = is_negated ? 2 : 1; /* 2 or 1 cuz we wanna skip `[^`/`[` */
+         size_t idx     = is_negated ? 2 : 1; /* 2 or 1 cuz we wanna skip `[^`/`[` */
 
          while (regex[idx] && regex[idx] != ']')
             {
@@ -159,7 +159,7 @@ get_token_len (const char *regex, regen_t *regen)
 
 int
 match_recursive (const char *regex, size_t regex_len, const char *str, size_t str_len,
-            const char *orig_str, regen_t *regen, size_t p_idx)
+                 const char *orig_str, regen_t *regen, size_t p_idx)
 {
    size_t i = 0, j = 0;
 
@@ -190,7 +190,7 @@ match_recursive (const char *regex, size_t regex_len, const char *str, size_t st
                if (type == GROUP_LOOKBEHIND_POS || type == GROUP_LOOKBEHIND_NEG)
                   {
                      size_t lb_len = calc_fixed_width (regen->groups.elems[target_idx].start,
-                                                      regen->groups.elems[target_idx].size);
+                                                       regen->groups.elems[target_idx].size);
 
                      if ((str + j) - lb_len < orig_str)
                         {
@@ -202,13 +202,14 @@ match_recursive (const char *regex, size_t regex_len, const char *str, size_t st
                         }
                      else
                         {
-                           consumed = match_alternation ((str + j) - lb_len, lb_len, orig_str, regen,
-                                                     target_idx);
+                           consumed = match_alternation ((str + j) - lb_len, lb_len, orig_str,
+                                                         regen, target_idx);
                         }
                   }
                else
                   {
-                     consumed = match_alternation (str + j, str_len - j, orig_str, regen, target_idx);
+                     consumed
+                         = match_alternation (str + j, str_len - j, orig_str, regen, target_idx);
                   }
 
                if (type == GROUP_LOOKAHEAD_POS && consumed < 0)
@@ -303,13 +304,14 @@ match_recursive (const char *regex, size_t regex_len, const char *str, size_t st
          size_t token_len = get_token_len (regex + i, regen);
 
          if (i + token_len < regex_len
-             && (regex[i + token_len] == '*' || regex[i + token_len] == '+' || regex[i + token_len] == '?'))
+             && (regex[i + token_len] == '*' || regex[i + token_len] == '+'
+                 || regex[i + token_len] == '?'))
             {
-               char step_c           = regex[i + token_len];
-               int is_lazy           = (i + token_len + 1 < regex_len && regex[i + token_len + 1] == '?');
+               char step_c = regex[i + token_len];
+               int is_lazy = (i + token_len + 1 < regex_len && regex[i + token_len + 1] == '?');
                size_t next_regex_off = i + token_len + 1 + (is_lazy ? 1 : 0);
 
-               size_t j_offset      = j;
+               size_t j_offset    = j;
                size_t max_matches = (step_c == '?') ? 1 : (str_len - j);
                size_t min_matches = (step_c == '+') ? 1 : 0;
 
@@ -339,8 +341,8 @@ match_recursive (const char *regex, size_t regex_len, const char *str, size_t st
                               {
                                  int res = match_recursive (
                                      regex + next_regex_off, regex_len - next_regex_off,
-                                     str + j_offset + crnt_offset, str_len - (j_offset + crnt_offset),
-                                     orig_str, regen, p_idx);
+                                     str + j_offset + crnt_offset,
+                                     str_len - (j_offset + crnt_offset), orig_str, regen, p_idx);
                                  if (res >= 0)
                                     {
                                        return (j_offset + crnt_offset + res);
@@ -355,8 +357,8 @@ match_recursive (const char *regex, size_t regex_len, const char *str, size_t st
                            int consumed
                                = is_group
                                      ? match_alternation (str + j_offset + crnt_offset,
-                                                     str_len - (j_offset + crnt_offset), orig_str,
-                                                     regen, target_group_idx)
+                                                          str_len - (j_offset + crnt_offset),
+                                                          orig_str, regen, target_group_idx)
                                      : match_atom (regex + i, str + j_offset + crnt_offset, regen);
 
                            if (consumed <= 0 || (j_offset + crnt_offset + consumed) > str_len)
@@ -379,8 +381,8 @@ match_recursive (const char *regex, size_t regex_len, const char *str, size_t st
                            int consumed
                                = is_group
                                      ? match_alternation (str + j_offset + crnt_total,
-                                                     str_len - (j_offset + crnt_total), orig_str,
-                                                     regen, target_group_idx)
+                                                          str_len - (j_offset + crnt_total),
+                                                          orig_str, regen, target_group_idx)
                                      : match_atom (regex + i, str + j_offset + crnt_total, regen);
 
                            if (consumed <= 0 || (j_offset + crnt_total + consumed) > str_len)
@@ -394,10 +396,10 @@ match_recursive (const char *regex, size_t regex_len, const char *str, size_t st
 
                      while (count >= min_matches)
                         {
-                           int res = match_recursive (regex + next_regex_off, regex_len - next_regex_off,
-                                                 str + j_offset + offsets[count],
-                                                 str_len - (j_offset + offsets[count]), orig_str,
-                                                 regen, p_idx);
+                           int res = match_recursive (
+                               regex + next_regex_off, regex_len - next_regex_off,
+                               str + j_offset + offsets[count],
+                               str_len - (j_offset + offsets[count]), orig_str, regen, p_idx);
                            if (res >= 0)
                               {
                                  return (j_offset + offsets[count] + res);
@@ -427,27 +429,35 @@ match_recursive (const char *regex, size_t regex_len, const char *str, size_t st
 } /* exec_match */
 
 int
-match_alternation (const char *str, size_t str_len, const char *orig_str, regen_t *regen, size_t p_idx)
+match_alternation (const char *str, size_t str_len, const char *orig_str, regen_t *regen,
+                   size_t p_idx)
 {
-   paren_pair_t *pair = &regen->groups.elems[p_idx];
-   for (size_t i = 0; i <= pair->bars_count; ++i)
+   paren_pair_t *group = &regen->groups.elems[p_idx];
+   for (size_t i = 0; i <= group->bars_count; ++i)
       {
-         /* const char *bstart = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i -
-          * 1].bar_ptr + 1; */
-         const char *bstart
-             = (i == 0) ? pair->start : regen->alternatives.elems[pair->bars_idx + i - 1].bar_ptr + 1;
-         size_t b_len;
+         const char *alt_start;
 
-         if (i < pair->bars_count)
+         if (i == 0)
             {
-               b_len = regen->alternatives.elems[pair->bars_idx + i].bar_ptr - bstart;
+               alt_start = group->start;
             }
          else
             {
-               b_len = pair->start + pair->size - bstart;
+               alt_start = regen->alternatives.elems[group->bars_idx + i - 1].bar_ptr + 1;
             }
 
-         int result = match_recursive (bstart, b_len, str, str_len, orig_str, regen, p_idx);
+         size_t alt_len;
+
+         if (i < group->bars_count)
+            {
+               alt_len = regen->alternatives.elems[group->bars_idx + i].bar_ptr - alt_start;
+            }
+         else
+            {
+               alt_len = group->start + group->size - alt_start;
+            }
+
+         int result = match_recursive (alt_start, alt_len, str, str_len, orig_str, regen, p_idx);
          if (result >= 0)
             {
                return result;
@@ -460,10 +470,12 @@ regen_result_t
 regen_match (const char *regex, const char *str, regen_t *regen)
 {
    regen_result_t result = { 0 };
-   size_t regex_len      = strlen (regex);
-   regen->alternatives.count     = 0;
-   regen->captures.count = 0;
-   regen->groups.count    = 0;
+   result.status         = REGEN_RES_NOMATCH;
+
+   size_t regex_len          = strlen (regex);
+   regen->alternatives.count = 0;
+   regen->captures.count     = 0;
+   regen->groups.count       = 0;
 
    paren_pair_t root = { regex, regex_len, 0, 0, GROUP_CAPTURE };
    dappend (regen->groups, root);
@@ -522,7 +534,7 @@ regen_match (const char *regex, const char *str, regen_t *regen)
             }
          else if (regex[i] == ')' && stack_ptr > 1)
             {
-               size_t p_idx                   = stack[--stack_ptr];
+               size_t p_idx                    = stack[--stack_ptr];
                regen->groups.elems[p_idx].size = regex + i - regen->groups.elems[p_idx].start;
             }
          else if (regex[i] == '|')
@@ -538,15 +550,27 @@ regen_match (const char *regex, const char *str, regen_t *regen)
    for (size_t i = 0; i <= str_len; i++)
       {
          int match_len = match_alternation (str + i, str_len - i, str, regen, 0);
+
+         if (match_len < 0)
+            {
+               result.status = REGEN_RES_ERROR;
+               return result;
+            }
+
          if (match_len >= 0)
             {
+               result.status = REGEN_RES_OK;
+
                char *full_match = malloc (match_len + 1);
-               if (full_match)
+               if (!full_match)
                   {
-                     memcpy (full_match, str + i, match_len);
-                     full_match[match_len] = '\0';
-                     dappend (result, full_match);
+                     result.status = REGEN_RES_ERROR;
+                     return result;
                   }
+
+               memcpy (full_match, str + i, match_len);
+               full_match[match_len] = '\0';
+               dappend (result, full_match);
 
                for (size_t c = 0; c < regen->captures.count; c++)
                   {
@@ -561,14 +585,16 @@ regen_match (const char *regex, const char *str, regen_t *regen)
                                  dappend (result, sub);
                               }
                         }
-                     else
+                     /*else
                         {
-                           /*dappend (result, NULL);*/
+                           dappend (result, NULL);
                         }
+                        */
                   }
                return result;
             }
       }
+
    return result;
 } /* regen_match */
 
@@ -593,11 +619,21 @@ regen_free (regen_t *r)
 void
 regen_result_free (regen_result_t *r)
 {
+   if (!r || !r->elems)
+      {
+         return;
+      }
+
    for (size_t i = 0; i < r->count; i++)
       {
-         free (r->elems[i]);
+         if (r->elems[i])
+            {
+               free (r->elems[i]);
+            }
       }
+
    free (r->elems);
-   r->elems = NULL;
-   r->count = 0;
+   r->elems  = NULL;
+   r->count  = 0;
+   r->status = REGEN_RES_NOMATCH;
 }

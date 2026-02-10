@@ -55,27 +55,44 @@ main (void)
          printf ("=== CASE #%02d ===\n", i + 1);
          printf ("   REGEX -- %s\n", wcase.regex);
          printf ("   TEXT -- %s\n", wcase.text);
-         printf ("   MATCH COUNT -- ");
 
-         if (result.count > 0)
+         switch (result.status)
             {
-               printf ("%02zu\n", result.count);
-               printf ("   MATCHES -- ");
-               for (size_t i = 0; i < result.count; i++)
-                  {
-                     printf ("'%s'  ", result.elems[i]);
-                  }
-               printf ("\n");
-            }
-         else
-            {
-               printf ("NIL\n");
+            case REGEN_RES_NOMATCH:
+               {
+                  printf ("   NO MATCH!!!\n");
+               }
+               break;
+
+            case REGEN_RES_OK:
+               {
+                  printf ("   MATCH COUNT -- %02zu\n", result.count);
+                  printf ("   MATCHES -- ");
+                  for (size_t i = 0; i < result.count; i++)
+                     {
+                        printf ("'%s'  ", result.elems[i]);
+                     }
+                  printf ("\n");
+               }
+               break;
+
+            case REGEN_RES_ERROR:
+               {
+                  printf ("   REGEN ERROR!!!\n");
+               }
+               break;
+
+            default:
+               {
+                  printf ("   UNEXPECTED RESULT TYPE!!!\n");
+               }
+               break;
             }
 
          printf ("\n");
 
          regen_free (&regen);
-         regen_result_free(&result);
+         regen_result_free (&result);
       }
 
    return 0;
