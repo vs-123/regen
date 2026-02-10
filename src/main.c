@@ -72,6 +72,7 @@ main (void)
          printf ("\n");
 
          regen_free (&regen);
+         regen_result_free(&result);
       }
 
    return 0;
