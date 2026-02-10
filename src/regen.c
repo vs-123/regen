@@ -551,7 +551,7 @@ regen_match (const char *regex, const char *str, regen_t *regen)
       {
          int match_len = match_alternation (str + i, str_len - i, str, regen, 0);
 
-         if (match_len < 0)
+         if (match_len < -1)
             {
                result.status = REGEN_RES_ERROR;
                return result;
