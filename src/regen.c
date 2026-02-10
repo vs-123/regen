@@ -43,7 +43,7 @@ get_subexpr_len (const char *regex, size_t len)
       }
 
    return size;
-}
+} /* get_subexpr_len */
 
 int
 match_sngl (const char *regex, const char *str, regen_t *regen)
@@ -347,9 +347,10 @@ intrprt_bars (const char *str, size_t str_len, const char *orig_str, regen_t *re
    return -1;
 }
 
-int
+regen_result_t
 regen_match (const char *regex, const char *str, regen_t *regen)
 {
+   regen_result_t result = { 0 };
    size_t regex_len      = strlen (regex);
    regen->bars.count     = 0;
    regen->captures.count = 0;
@@ -422,13 +423,39 @@ regen_match (const char *regex, const char *str, regen_t *regen)
    size_t str_len = strlen (str);
    for (size_t i = 0; i <= str_len; i++)
       {
-         int ok = intrprt_bars (str + i, str_len - i, str, regen, 0);
-         if (ok >= 0)
+         int match_len = intrprt_bars (str + i, str_len - i, str, regen, 0);
+         if (match_len >= 0)
             {
-               return ok;
+               char *full_match = malloc (match_len + 1);
+               if (full_match)
+                  {
+                     memcpy (full_match, str + i, match_len);
+                     full_match[match_len] = '\0';
+                     dappend (result, full_match);
+                  }
+
+               for (size_t c = 0; c < regen->captures.count; c++)
+                  {
+                     capture_t *cap = &regen->captures.elems[c];
+                     if (cap->ptr)
+                        {
+                           char *sub = malloc (cap->size + 1);
+                           if (sub)
+                              {
+                                 memcpy (sub, cap->ptr, cap->size);
+                                 sub[cap->size] = '\0';
+                                 dappend (result, sub);
+                              }
+                        }
+                     else
+                        {
+                           dappend (result, NULL);
+                        }
+                  }
+               return result;
             }
       }
-   return -1;
+   return result;
 } /* regen_match */
 
 void
@@ -447,4 +474,16 @@ regen_free (regen_t *r)
          free (r->captures.elems);
       }
    memset (r, 0, sizeof (regen_t));
+}
+
+void
+regen_result_free (regen_result_t *r)
+{
+   for (size_t i = 0; i < r->count; i++)
+      {
+         free (r->elems[i]);
+      }
+   free (r->elems);
+   r->elems = NULL;
+   r->count = 0;
 }
