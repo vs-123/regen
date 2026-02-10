@@ -40,8 +40,7 @@ int main(void)
       { "<a>.*</a>", "<a>first</a><a>second</a>", .should_match = 1 },
       { "<a>.*?</a>", "<a>first</a><a>second</a>", .should_match = 1 },
 
-      { "([ab])\\1", "aa", .should_match = 1 },
-      { "([ab])\\1", "ab", .should_match = 0 },
+      { "([ab])\\1", "aa", .should_match = 1 }, { "([ab])\\1", "ab", .should_match = 0 },
       { "(\\w+)\\s+\\1", "hello hello", .should_match = 1 },
       { "(\\d+) (\\d+) \\1 \\2", "1 2 1 2", .should_match = 1 },
       { "(a|(b))\\1", "a", .should_match = 1 },

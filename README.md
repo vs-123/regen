@@ -64,13 +64,11 @@ int main(void) {
    - Works inside groups and at root level
    - Supports backtracking i.e. if a branch matches but the rest of the regex fails, regen backtracks and tries the next alternative
 
-- **GREEDY QUANTIFIERS**
-   - First consumes as many characters as possible
+- **QUANTIFIERS**
+   - Greedy quantifiers first consume as many characters as possible
    - If subsequent part of regex fails due to this, regen backtracks and tries rest of the pattern
    - This makes patterns like `[0-9]+[0-9]` work
-
-- **NON-GREEDY QUANTIFIERS** 
-   - Supports non-greedy quantifiers like `*?` & `+?`
+   - Non-greedy quantifiers like `*?` & `+?` are supported too
 
 - **CHARACTER CLASSES + WILDCARD**
    - Supports `[...]` sets, `[a-z]` ranges, `[^...]` inverted sets, `\d`, `\w`, `\s` and their inversions and also `.` wildcard
