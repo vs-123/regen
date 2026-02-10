@@ -1,6 +1,6 @@
 # REGEN
 
-Regen is a dead-simple, **PCRE-compatible**, regular-expressions engine written in C99. The term `regen` is a syllabic abbreviation of **reg**ex-**en**gine. This regular-expressions engine uses a recursive-backtracking algorithm with a transactional state-management system to handle complex pattern matching scenarios.
+Regen is a dead-simple, **PCRE-compatible**, regular-expressions engine written in C99. The term `regen` is a syllabic abbreviation of **reg**ex-**en**gine. This regular-expressions engine uses a recursive-backtracking algorithm with a transactional state-management system to handle complex pattern matching scenarios. No external libraries were used.
 
 ## USAGE
 
