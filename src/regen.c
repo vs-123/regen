@@ -119,15 +119,20 @@ get_thing_size (const char *regex, regen_t *regen)
       }
    if (regex[0] == '[')
       {
-         for (size_t i = 0; i < regen->pairs.count; i++)
+         size_t k = 1;
+         if (regex[k] == '^')
             {
-               if (regen->pairs.elems[i].start == regex + 1
-                   || regen->pairs.elems[i].start == regex + 3
-                   || regen->pairs.elems[i].start == regex + 4)
-                  {
-                     return (regen->pairs.elems[i].start - regex) + regen->pairs.elems[i].size + 1;
-                  }
+               k++;
             }
+         if (regex[k] == ']')
+            {
+               k++;
+            }
+         while (regex[k] && regex[k] != ']')
+            {
+               k++;
+            }
+         return k + 1;
       }
    if (regex[0] == '(')
       {
@@ -360,22 +365,30 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                                      : match_sngl (regex + i, str + j_strt + crnt_total, regen);
 
                            if (consumed <= 0 || (j_strt + crnt_total + consumed) > str_len)
-                              break;
+                              {
+                                 break;
+                              }
                            crnt_total += consumed;
                            count++;
                            offsets[count] = crnt_total;
                         }
 
-                     while (count >= min_matches)
+                     while (1)
                         {
                            int res = exec_match (regex + next_regex_off, regex_len - next_regex_off,
                                                  str + j_strt + offsets[count],
                                                  str_len - (j_strt + offsets[count]), orig_str,
                                                  regen, p_idx);
                            if (res >= 0)
-                              return (j_strt + offsets[count] + res);
+                              {
+                                 return (j_strt + offsets[count] + res);
+                              }
+
                            if (count == 0)
-                              break;
+                              {
+                                 break;
+                              }
+
                            count--;
                         }
                   }
