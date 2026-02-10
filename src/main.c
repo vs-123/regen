@@ -15,7 +15,6 @@ int
 main (void)
 {
    regen_t regen = { 0 };
-   /*const char *demos[][2] = {*/
    const case_t cases[]
        = { /* MATCH */
            { "(red|blue) pill", "take the red pill", .should_match = 1 },
@@ -49,7 +48,29 @@ main (void)
       {
          case_t wcase          = cases[i];
          regen_result_t result = regen_match (wcase.regex, wcase.text, &regen);
-         printf ("[CASE #%02d] COUNT --> %zu\n", i + 1, result.count);
+
+         printf ("=== CASE #%02d ===\n", i + 1);
+         printf ("   REGEX -- %s\n", wcase.regex);
+         printf ("   TEXT -- %s\n", wcase.text);
+         printf ("   MATCH COUNT -- ");
+
+         if (result.count > 0)
+            {
+               printf ("%02zu\n", result.count);
+               printf ("   MATCHES -- ");
+               for (size_t i = 0; i < result.count; i++)
+                  {
+                     printf ("'%s'  ", result.elems[i]);
+                  }
+               printf ("\n");
+            }
+         else
+            {
+               printf ("NIL\n");
+            }
+
+         printf ("\n");
+
          regen_free (&regen);
       }
 

@@ -45,6 +45,16 @@ get_subexpr_len (const char *regex, size_t len)
    return size;
 } /* get_subexpr_len */
 
+void
+clear_captures (regen_t *regen, size_t p_idx)
+{
+   if (p_idx > 0 && p_idx <= regen->captures.count)
+      {
+         regen->captures.elems[p_idx - 1].ptr = NULL;
+         regen->captures.elems[p_idx - 1].size = 0;
+      }
+}
+
 int
 match_sngl (const char *regex, const char *str, regen_t *regen)
 {
@@ -153,6 +163,10 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
 
                group_type_t type = regen->pairs.elems[target_idx].type;
                int bar_thing;
+
+               if (type == GROUP_CAPTURE) {
+                  clear_captures(regen, target_idx);
+               }
 
                if (type == GROUP_LOOKBEHIND_POS || type == GROUP_LOOKBEHIND_NEG)
                   {
@@ -449,7 +463,7 @@ regen_match (const char *regex, const char *str, regen_t *regen)
                         }
                      else
                         {
-                           dappend (result, NULL);
+                           /*dappend (result, NULL);*/
                         }
                   }
                return result;
