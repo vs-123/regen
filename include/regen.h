@@ -80,8 +80,8 @@ typedef struct
 
 typedef struct
 {
-   dparen_pair_t pairs;
-   dbar_t bars;
+   dparen_pair_t groups;
+   dbar_t alternatives;
    dcapture_t captures;
    int is_not_case_sensitive;
 } regen_t;

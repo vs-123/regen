@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-int intrprt_bars (const char *, size_t, const char *, regen_t *, size_t);
+int match_alternation (const char *, size_t, const char *, regen_t *, size_t);
 
 size_t
-get_subexpr_len (const char *regex, size_t len)
+calc_fixed_width (const char *regex, size_t len)
 {
    size_t size = 0;
    size_t i    = 0;
@@ -56,7 +56,7 @@ clear_captures (regen_t *regen, size_t p_idx)
 }
 
 int
-match_sngl (const char *regex, const char *str, regen_t *regen)
+match_atom (const char *regex, const char *str, regen_t *regen)
 {
    if (*regex == '.')
       {
@@ -66,8 +66,8 @@ match_sngl (const char *regex, const char *str, regen_t *regen)
    if (*regex == '[')
       {
          int has_found      = 0;
-         int is_carrot_mode = (regex[1] == '^');      /* carrot's funnier than caret lol */
-         size_t idx         = is_carrot_mode ? 2 : 1; /* 2 or 1 cuz we wanna skip `[^`/`[` */
+         int is_negated = (regex[1] == '^');
+         size_t idx         = is_negated ? 2 : 1; /* 2 or 1 cuz we wanna skip `[^`/`[` */
 
          while (regex[idx] && regex[idx] != ']')
             {
@@ -88,7 +88,7 @@ match_sngl (const char *regex, const char *str, regen_t *regen)
                      idx++;
                   }
             }
-         if (is_carrot_mode)
+         if (is_negated)
             {
                has_found = !has_found;
             }
@@ -119,9 +119,8 @@ match_sngl (const char *regex, const char *str, regen_t *regen)
    return (rc == sc) ? 1 : -1;
 } /* match_sngl */
 
-/* i have no idea how to name this lol */
 size_t
-get_thing_size (const char *regex, regen_t *regen)
+get_token_len (const char *regex, regen_t *regen)
 {
    if (regex[0] == '\\')
       {
@@ -146,12 +145,12 @@ get_thing_size (const char *regex, regen_t *regen)
       }
    if (regex[0] == '(')
       {
-         for (size_t i = 0; i < regen->pairs.count; i++)
+         for (size_t i = 0; i < regen->groups.count; i++)
             {
-               const char *p_start = regen->pairs.elems[i].start;
+               const char *p_start = regen->groups.elems[i].start;
                if (p_start == regex + 1 || p_start == regex + 3 || p_start == regex + 4)
                   {
-                     return (p_start - regex) + regen->pairs.elems[i].size + 1;
+                     return (p_start - regex) + regen->groups.elems[i].size + 1;
                   }
             }
       }
@@ -159,7 +158,7 @@ get_thing_size (const char *regex, regen_t *regen)
 }
 
 int
-exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len,
+match_recursive (const char *regex, size_t regex_len, const char *str, size_t str_len,
             const char *orig_str, regen_t *regen, size_t p_idx)
 {
    size_t i = 0, j = 0;
@@ -169,9 +168,9 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
          if (regex[i] == '(')
             {
                size_t target_idx = 0;
-               for (size_t pair_idx = 1; pair_idx < regen->pairs.count; pair_idx++)
+               for (size_t pair_idx = 1; pair_idx < regen->groups.count; pair_idx++)
                   {
-                     const char *p_start = regen->pairs.elems[pair_idx].start;
+                     const char *p_start = regen->groups.elems[pair_idx].start;
                      if (p_start == (regex + i + 1) || p_start == (regex + i + 3)
                          || p_start == (regex + i + 4))
                         {
@@ -180,8 +179,8 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                         }
                   }
 
-               group_type_t type = regen->pairs.elems[target_idx].type;
-               int bar_thing;
+               group_type_t type = regen->groups.elems[target_idx].type;
+               int consumed;
 
                if (type == GROUP_CAPTURE)
                   {
@@ -190,8 +189,8 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
 
                if (type == GROUP_LOOKBEHIND_POS || type == GROUP_LOOKBEHIND_NEG)
                   {
-                     size_t lb_len = get_subexpr_len (regen->pairs.elems[target_idx].start,
-                                                      regen->pairs.elems[target_idx].size);
+                     size_t lb_len = calc_fixed_width (regen->groups.elems[target_idx].start,
+                                                      regen->groups.elems[target_idx].size);
 
                      if ((str + j) - lb_len < orig_str)
                         {
@@ -199,39 +198,39 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                               {
                                  return -1;
                               }
-                           bar_thing = -1;
+                           consumed = -1;
                         }
                      else
                         {
-                           bar_thing = intrprt_bars ((str + j) - lb_len, lb_len, orig_str, regen,
+                           consumed = match_alternation ((str + j) - lb_len, lb_len, orig_str, regen,
                                                      target_idx);
                         }
                   }
                else
                   {
-                     bar_thing = intrprt_bars (str + j, str_len - j, orig_str, regen, target_idx);
+                     consumed = match_alternation (str + j, str_len - j, orig_str, regen, target_idx);
                   }
 
-               if (type == GROUP_LOOKAHEAD_POS && bar_thing < 0)
+               if (type == GROUP_LOOKAHEAD_POS && consumed < 0)
                   {
                      return -1;
                   }
-               if (type == GROUP_LOOKAHEAD_NEG && bar_thing >= 0)
+               if (type == GROUP_LOOKAHEAD_NEG && consumed >= 0)
                   {
                      return -1;
                   }
-               if (type == GROUP_LOOKBEHIND_POS && bar_thing < 0)
+               if (type == GROUP_LOOKBEHIND_POS && consumed < 0)
                   {
                      return -1;
                   }
-               if (type == GROUP_LOOKBEHIND_NEG && bar_thing >= 0)
+               if (type == GROUP_LOOKBEHIND_NEG && consumed >= 0)
                   {
                      return -1;
                   }
 
                if (type == GROUP_CAPTURE || type == GROUP_NON_CAPTURE)
                   {
-                     if (bar_thing < 0)
+                     if (consumed < 0)
                         {
                            return -1;
                         }
@@ -239,9 +238,9 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                      if (type == GROUP_CAPTURE && target_idx - 1 < regen->captures.count)
                         {
                            regen->captures.elems[target_idx - 1].ptr  = str + j;
-                           regen->captures.elems[target_idx - 1].size = bar_thing;
+                           regen->captures.elems[target_idx - 1].size = consumed;
                         }
-                     j += bar_thing;
+                     j += consumed;
                   }
 
                size_t prefix_len = 1;
@@ -254,7 +253,7 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                      prefix_len = 4;
                   }
 
-               i += prefix_len + regen->pairs.elems[target_idx].size + 1;
+               i += prefix_len + regen->groups.elems[target_idx].size + 1;
                continue;
 
                continue;
@@ -301,16 +300,16 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                continue;
             }
 
-         size_t step = get_thing_size (regex + i, regen);
+         size_t token_len = get_token_len (regex + i, regen);
 
-         if (i + step < regex_len
-             && (regex[i + step] == '*' || regex[i + step] == '+' || regex[i + step] == '?'))
+         if (i + token_len < regex_len
+             && (regex[i + token_len] == '*' || regex[i + token_len] == '+' || regex[i + token_len] == '?'))
             {
-               char step_c           = regex[i + step];
-               int is_lazy           = (i + step + 1 < regex_len && regex[i + step + 1] == '?');
-               size_t next_regex_off = i + step + 1 + (is_lazy ? 1 : 0);
+               char step_c           = regex[i + token_len];
+               int is_lazy           = (i + token_len + 1 < regex_len && regex[i + token_len + 1] == '?');
+               size_t next_regex_off = i + token_len + 1 + (is_lazy ? 1 : 0);
 
-               size_t j_strt      = j;
+               size_t j_offset      = j;
                size_t max_matches = (step_c == '?') ? 1 : (str_len - j);
                size_t min_matches = (step_c == '+') ? 1 : 0;
 
@@ -318,9 +317,9 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                size_t target_group_idx = 0;
                if (is_group)
                   {
-                     for (size_t pair_idx = 1; pair_idx < regen->pairs.count; pair_idx++)
+                     for (size_t pair_idx = 1; pair_idx < regen->groups.count; pair_idx++)
                         {
-                           const char *p_start = regen->pairs.elems[pair_idx].start;
+                           const char *p_start = regen->groups.elems[pair_idx].start;
                            if (p_start == (regex + i + 1) || p_start == (regex + i + 3)
                                || p_start == (regex + i + 4))
                               {
@@ -338,13 +337,13 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                         {
                            if (count >= min_matches)
                               {
-                                 int res = exec_match (
+                                 int res = match_recursive (
                                      regex + next_regex_off, regex_len - next_regex_off,
-                                     str + j_strt + crnt_offset, str_len - (j_strt + crnt_offset),
+                                     str + j_offset + crnt_offset, str_len - (j_offset + crnt_offset),
                                      orig_str, regen, p_idx);
                                  if (res >= 0)
                                     {
-                                       return (j_strt + crnt_offset + res);
+                                       return (j_offset + crnt_offset + res);
                                     }
                               }
 
@@ -355,12 +354,12 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
 
                            int consumed
                                = is_group
-                                     ? intrprt_bars (str + j_strt + crnt_offset,
-                                                     str_len - (j_strt + crnt_offset), orig_str,
+                                     ? match_alternation (str + j_offset + crnt_offset,
+                                                     str_len - (j_offset + crnt_offset), orig_str,
                                                      regen, target_group_idx)
-                                     : match_sngl (regex + i, str + j_strt + crnt_offset, regen);
+                                     : match_atom (regex + i, str + j_offset + crnt_offset, regen);
 
-                           if (consumed <= 0 || (j_strt + crnt_offset + consumed) > str_len)
+                           if (consumed <= 0 || (j_offset + crnt_offset + consumed) > str_len)
                               {
                                  break;
                               }
@@ -379,12 +378,12 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
                         {
                            int consumed
                                = is_group
-                                     ? intrprt_bars (str + j_strt + crnt_total,
-                                                     str_len - (j_strt + crnt_total), orig_str,
+                                     ? match_alternation (str + j_offset + crnt_total,
+                                                     str_len - (j_offset + crnt_total), orig_str,
                                                      regen, target_group_idx)
-                                     : match_sngl (regex + i, str + j_strt + crnt_total, regen);
+                                     : match_atom (regex + i, str + j_offset + crnt_total, regen);
 
-                           if (consumed <= 0 || (j_strt + crnt_total + consumed) > str_len)
+                           if (consumed <= 0 || (j_offset + crnt_total + consumed) > str_len)
                               {
                                  break;
                               }
@@ -395,13 +394,13 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
 
                      while (count >= min_matches)
                         {
-                           int res = exec_match (regex + next_regex_off, regex_len - next_regex_off,
-                                                 str + j_strt + offsets[count],
-                                                 str_len - (j_strt + offsets[count]), orig_str,
+                           int res = match_recursive (regex + next_regex_off, regex_len - next_regex_off,
+                                                 str + j_offset + offsets[count],
+                                                 str_len - (j_offset + offsets[count]), orig_str,
                                                  regen, p_idx);
                            if (res >= 0)
                               {
-                                 return (j_strt + offsets[count] + res);
+                                 return (j_offset + offsets[count] + res);
                               }
 
                            if (count == 0)
@@ -416,39 +415,39 @@ exec_match (const char *regex, size_t regex_len, const char *str, size_t str_len
             }
          else
             {
-               if (j >= str_len || match_sngl (regex + i, str + j, regen) < 0)
+               if (j >= str_len || match_atom (regex + i, str + j, regen) < 0)
                   {
                      return -1;
                   }
                j++;
-               i += step;
+               i += token_len;
             }
       }
    return j;
 } /* exec_match */
 
 int
-intrprt_bars (const char *str, size_t str_len, const char *orig_str, regen_t *regen, size_t p_idx)
+match_alternation (const char *str, size_t str_len, const char *orig_str, regen_t *regen, size_t p_idx)
 {
-   paren_pair_t *pair = &regen->pairs.elems[p_idx];
+   paren_pair_t *pair = &regen->groups.elems[p_idx];
    for (size_t i = 0; i <= pair->bars_count; ++i)
       {
          /* const char *bstart = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i -
           * 1].bar_ptr + 1; */
          const char *bstart
-             = (i == 0) ? pair->start : regen->bars.elems[pair->bars_idx + i - 1].bar_ptr + 1;
+             = (i == 0) ? pair->start : regen->alternatives.elems[pair->bars_idx + i - 1].bar_ptr + 1;
          size_t b_len;
 
          if (i < pair->bars_count)
             {
-               b_len = regen->bars.elems[pair->bars_idx + i].bar_ptr - bstart;
+               b_len = regen->alternatives.elems[pair->bars_idx + i].bar_ptr - bstart;
             }
          else
             {
                b_len = pair->start + pair->size - bstart;
             }
 
-         int result = exec_match (bstart, b_len, str, str_len, orig_str, regen, p_idx);
+         int result = match_recursive (bstart, b_len, str, str_len, orig_str, regen, p_idx);
          if (result >= 0)
             {
                return result;
@@ -462,12 +461,12 @@ regen_match (const char *regex, const char *str, regen_t *regen)
 {
    regen_result_t result = { 0 };
    size_t regex_len      = strlen (regex);
-   regen->bars.count     = 0;
+   regen->alternatives.count     = 0;
    regen->captures.count = 0;
-   regen->pairs.count    = 0;
+   regen->groups.count    = 0;
 
    paren_pair_t root = { regex, regex_len, 0, 0, GROUP_CAPTURE };
-   dappend (regen->pairs, root);
+   dappend (regen->groups, root);
 
    size_t stack[256];
    size_t stack_ptr   = 0;
@@ -512,33 +511,33 @@ regen_match (const char *regex, const char *str, regen_t *regen)
                         }
                   }
 
-               paren_pair_t p = { regex + i + offset, 0, regen->bars.count, 0, type };
+               paren_pair_t p = { regex + i + offset, 0, regen->alternatives.count, 0, type };
                capture_t c    = { 0 };
 
-               dappend (regen->pairs, p);
+               dappend (regen->groups, p);
                dappend (regen->captures, c);
-               stack[stack_ptr++] = regen->pairs.count - 1;
+               stack[stack_ptr++] = regen->groups.count - 1;
 
                i += (offset - 1);
             }
          else if (regex[i] == ')' && stack_ptr > 1)
             {
                size_t p_idx                   = stack[--stack_ptr];
-               regen->pairs.elems[p_idx].size = regex + i - regen->pairs.elems[p_idx].start;
+               regen->groups.elems[p_idx].size = regex + i - regen->groups.elems[p_idx].start;
             }
          else if (regex[i] == '|')
             {
                size_t crnt_p = stack[stack_ptr - 1];
                bar_t b       = { crnt_p, regex + i };
-               dappend (regen->bars, b);
-               regen->pairs.elems[crnt_p].bars_count++;
+               dappend (regen->alternatives, b);
+               regen->groups.elems[crnt_p].bars_count++;
             }
       }
 
    size_t str_len = strlen (str);
    for (size_t i = 0; i <= str_len; i++)
       {
-         int match_len = intrprt_bars (str + i, str_len - i, str, regen, 0);
+         int match_len = match_alternation (str + i, str_len - i, str, regen, 0);
          if (match_len >= 0)
             {
                char *full_match = malloc (match_len + 1);
@@ -576,13 +575,13 @@ regen_match (const char *regex, const char *str, regen_t *regen)
 void
 regen_free (regen_t *r)
 {
-   if (r->pairs.elems)
+   if (r->groups.elems)
       {
-         free (r->pairs.elems);
+         free (r->groups.elems);
       }
-   if (r->bars.elems)
+   if (r->alternatives.elems)
       {
-         free (r->bars.elems);
+         free (r->alternatives.elems);
       }
    if (r->captures.elems)
       {
