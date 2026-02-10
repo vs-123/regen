@@ -9,40 +9,61 @@ Regen follows a three-step process -- initialise, match, clean.
 The following snippet demonstrates the process along with general usage:
 
 ```c
+#include <stdio.h>
+
 #include "regen.h"
 
-regen_t engine = {0};
+int main(void) {
+   regen_t engine = {0};
+   regen_result_t result = {0};
 
-/* BASIC MATCHING */
-const char *pattern = "colou?r";
-const char *text = "the colour is blue";
+   /* BASIC MATCHING */
+   const char *pattern1 = "colou?r";
+   const char *text1 = "the colour is blue";
 
-int match_len = regen_match(pattern, text, &engine);
+   result = regen_match(pattern1, text1, &engine);
 
-if (match_len >= 0) {
-   printf("MATCH SIZE --> %d characters\n", match_len);
-}
-
-/* CAPTURE GROUPS */
-const char *pattern = "([A-Za-z]+): (\\d+)";
-const char *text = "ContentLength: 404";
-
-if (regen_match(pattern, text, &engine) >= 0) {
-   for (size_t i = 0; i < engine.captures.count; i++) {
-      capture_t c = engine.captures.elems[i];
-      printf("GROUP [%zu]: %.*s\n", i + 1, (int)c.size, c.ptr);
+   if (result.count > 0) {
+      /* result.elems[0] IS ALWAYS THE FULL MATCH */
+      printf("MATCH FOUND --> '%s'\n", result.elems[0]);
    }
+   regen_result_free(&result);
+
+   /* CAPTURE GROUPS */
+   const char *pattern2 = "([A-Za-z]+): (\\d+)";
+   const char *text2 = "ContentLength: 404";
+
+   result = regen_match(pattern2, text2, &engine);
+   if (result.count > 0) {
+      /* INDEX 0 -- FULL MATCH */
+      /* INDEX 1 -- FIRST GROUP MATCH ([A-ZA-Z]+) */
+      /* INDEX 2 -- SECOND GROUP MATCH (\\D+) */
+      for (size_t i = 0; i < result.count; i++) {
+         printf("GROUP [%zu]: %s\n", i, result.elems[i]);
+      }
+   }
+   regen_result_free(&result);
+
+   /* LOOKAROUNDS (PCRE-COMPATIBLE) */
+   result = regen_match("abc(?=def)", "abcdef", &engine); 
+   regen_result_free(&result);
+
+   result = regen_match("(?<=abc)def", "abcdef", &engine);
+   regen_result_free(&result);
+
+   /* TOGGLE CASE-SENSITIVITY */
+   engine.is_not_case_sensitive = 1;
+   result = regen_match("APPLE", "i like apples", &engine); /* matches */
+   if (result.count > 0) {
+      printf("CASE-INSENSITIVE MATCH: %s\n", result.elems[0]);
+   }
+   regen_result_free(&result);
+
+   /* CLEANUP */
+   regen_free(&engine);
+
+   return 0;
 }
-
-/* LOOKAROUNDS (PCRE-COMPATIBLE) */
-regen_match("abc(?=def)", "abcdef", &engine); 
-regen_match("(?<=abc)def", "abcdef", &engine);
-
-/* TOGGLE CASE-SENSITIVITY */
-engine.is_not_case_sensitive = 1;
-regen_match("APPLE", "i like apples", &engine); /* matches */
-
-regen_free(&engine);
 ```
 
 ## FEATURES
