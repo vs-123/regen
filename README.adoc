@@ -104,6 +104,7 @@ int main(void) {
 | `\w` | **SHORTHAND** |  Alphanumeric words (underscores are counted)
 | `\b` | **BOUNDARY** |  Word boundary
 | `\\` | **ESCAPE** |  Literal escape
+|===
 
 == LIMITATIONS
 
