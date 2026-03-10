@@ -77,8 +77,9 @@ int main(void) {
 
 == SYNTAX
 
+[cols="1,2,3",options="header"]
+|===
 | SYNTAX | TERMINOLOGY | DESCRIPTION |
-| :-- | :-- | :-- |
 | `^` | **START OF STRING** |  Matches only when pattern occurs at the absolute beginning of the input |
 | `$` | **END OF STRING** |  Matches only when pattern reaches the very end of the input |
 | `.` | **WILDCARDS** |  Matches any single character |
