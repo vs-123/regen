@@ -1,14 +1,15 @@
 = REGEN
 
-Regen is a dead-simple, **PCRE-compatible**, regular-expressions engine written in C99. The term `regen` is a syllabic abbreviation of **reg**ex-**en**gine. This regular-expressions engine uses a recursive-backtracking algorithm with a transactional state-management system to handle complex pattern matching scenarios. No external libraries were used.
+Regen is a dead-simple, *PCRE-compatible*, regular-expressions engine written in C99. The term `regen` is a syllabic abbreviation of **reg**ex-**en**gine. This regular-expressions engine uses a recursive-backtracking algorithm with a transactional state-management system to handle complex pattern matching scenarios. No external libraries were used.
 
-## USAGE
+== USAGE
 
 Regen follows a three-step process -- initialise, match, clean.
 
 The following snippet demonstrates the process along with general usage:
 
-```c
+[source,c]
+----
 #include <stdio.h>
 #include "regen.h"
 
@@ -36,53 +37,45 @@ int main(void) {
    regen_free(&engine);
    return 0;
 }
-```
+----
 
-## FEATURES
+== FEATURES
 
-- **TRANSACTIONAL BACKTRACKING**
-   - Uses a local "undo log" for each recursion depth to ensure integrity of captures
-   - Prevents dirty capture states, especially in complex alternations
+* **TRANSACTIONAL BACKTRACKING**
+** Uses a local "undo log" for each recursion depth to ensure integrity of captures
+** Prevents dirty capture states, especially in complex alternations
+* **BACKREFERENCES**
+** Supports PCRE*style backreferences like `\1`, `\2`, etc.
+** Safety checks are implemented to avoid infinite recursion in nested backreferences like `(\1)`
+* **ZERO*WIDTH LOOKAROUND ASSERTIONS**
+** Positive Lookahead ** `(?=...)`
+** Negative Lookahead ** `(?!...)`
+** Positive Lookbehind ** `(?<=...)`
+** Negative Lookbehind ** `(?<!...)`
+* **CAPTURING GROUPS + NESTING**
+** Allows deeply nested groups
+** Supports dynamic group discovery
+** Non*capturing groups `(?:...)` supported too 
+* **ADVANCED ALTERNATION**
+** Tries branches left to right
+** Works inside groups and at root level
+** Supports backtracking i.e. if a branch matches but the rest of the regex fails, regen backtracks and tries the next alternative
+* **QUANTIFIERS**
+** Greedy quantifiers first consume as many characters as possible
+** If subsequent part of regex fails due to this, regen backtracks and tries rest of the pattern
+** This makes patterns like `[0*9]+[0*9]` work
+** Non*greedy quantifiers like `*?` & `+?` are supported too
+* **CHARACTER CLASSES + WILDCARD**
+** Supports `[...]` sets, `[a*z]` ranges, `[^...]` inverted sets, `\d`, `\w`, `\s` and their inversions and also `.` wildcard
+** See **SYNTAX** section for more information
+* **ANCHORS + BOUNDARIES**
+** Supports `^` and `$` anchors
+** Supports `\\` escape literals like `\.`
+** Supports `\b` word boundaries
+* **CASE SENSITIVITY**
+** Can be toggled with `is_not_case_sensitive` flag
 
-- **BACKREFERENCES**
-   - Supports PCRE-style backreferences like `\1`, `\2`, etc.
-   - Safety checks are implemented to avoid infinite recursion in nested backreferences like `(\1)`
-
-- **ZERO-WIDTH LOOKAROUND ASSERTIONS**
-   - Positive Lookahead -- `(?=...)`
-   - Negative Lookahead -- `(?!...)`
-   - Positive Lookbehind -- `(?<=...)`
-   - Negative Lookbehind -- `(?<!...)`
-
-- **CAPTURING GROUPS + NESTING**
-   - Allows deeply nested groups
-   - Supports dynamic group discovery
-   - Non-capturing groups `(?:...)` supported too 
-
-- **ADVANCED ALTERNATION**
-   - Tries branches left to right
-   - Works inside groups and at root level
-   - Supports backtracking i.e. if a branch matches but the rest of the regex fails, regen backtracks and tries the next alternative
-
-- **QUANTIFIERS**
-   - Greedy quantifiers first consume as many characters as possible
-   - If subsequent part of regex fails due to this, regen backtracks and tries rest of the pattern
-   - This makes patterns like `[0-9]+[0-9]` work
-   - Non-greedy quantifiers like `*?` & `+?` are supported too
-
-- **CHARACTER CLASSES + WILDCARD**
-   - Supports `[...]` sets, `[a-z]` ranges, `[^...]` inverted sets, `\d`, `\w`, `\s` and their inversions and also `.` wildcard
-   - See **SYNTAX** section for more information
-
-- **ANCHORS + BOUNDARIES**
-   - Supports `^` and `$` anchors
-   - Supports `\\` escape literals like `\.`
-   - Supports `\b` word boundaries
-
-- **CASE SENSITIVITY**
-   - Can be toggled with `is_not_case_sensitive` flag
-
-## SYNTAX
+== SYNTAX
 
 | SYNTAX | TERMINOLOGY | DESCRIPTION |
 | :-- | :-- | :-- |
@@ -110,16 +103,16 @@ int main(void) {
 | `\b` | **BOUNDARY** |  Word boundary |
 | `\\` | **ESCAPE** |  Literal escape |
 
-## LIMITATIONS
+== LIMITATIONS
 
 - **VARIABLE-LENGTH LOOKBEHIND** -- `(?<=a+)` not supported, lookbehinds need fixed-width patterns
 - **BACKREFERENCE COUNT** -- Limited to `\1`-`\9`
 - **QUANTIFIER LIMITS** -- `{min,max}` not supported
 
-## LICENSE
+== LICENSE
 
 This project is released under the GNU Affero General Public License version 3.0 or later.
 
 **NO WARRANTY PROVIDED**
 
-For full terms, see the `LICENSE` file in the project root or visit **https://www.gnu.org/licenses/agpl-3.0.en.html**.
+For full terms, see the `LICENSE` file in the project root or visit https://www.gnu.org/licenses/agpl-3.0.en.html.
