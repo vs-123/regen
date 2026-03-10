@@ -67,7 +67,7 @@ int main(void) {
 ** Non*greedy quantifiers like `*?` & `+?` are supported too
 * **CHARACTER CLASSES + WILDCARD**
 ** Supports `[...]` sets, `[a*z]` ranges, `[^...]` inverted sets, `\d`, `\w`, `\s` and their inversions and also `.` wildcard
-** See **SYNTAX** section for more information
+** See <<SYNTAX>> section for more information
 * **ANCHORS + BOUNDARIES**
 ** Supports `^` and `$` anchors
 ** Supports `\\` escape literals like `\.`
@@ -75,6 +75,7 @@ int main(void) {
 * **CASE SENSITIVITY**
 ** Can be toggled with `is_not_case_sensitive` flag
 
+[#SYNTAX]
 == SYNTAX
 
 [cols="1,2,3",options="header"]
@@ -106,9 +107,9 @@ int main(void) {
 
 == LIMITATIONS
 
-- **VARIABLE-LENGTH LOOKBEHIND** -- `(?<=a+)` not supported, lookbehinds need fixed-width patterns
-- **BACKREFERENCE COUNT** -- Limited to `\1`-`\9`
-- **QUANTIFIER LIMITS** -- `{min,max}` not supported
+* **VARIABLE-LENGTH LOOKBEHIND** -- `(?<=a+)` not supported, lookbehinds need fixed-width patterns
+* **BACKREFERENCE COUNT** -- Limited to `\1`-`\9`
+* **QUANTIFIER LIMITS** -- `{min,max}` not supported
 
 == LICENSE
 
